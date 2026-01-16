@@ -1,28 +1,32 @@
-// pubspec.yaml dependencies:
-// flutter:
-//   sdk: flutter
-// flutter_inappwebview: ^6.0.0
-// http: ^1.1.0
-// shared_preferences: ^2.2.2
 
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:http/http.dart' as http;
+// import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:io';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+// import 'package:url_launcher/url_launcher.dart';
+
+// import 'dart:convert';
+// import 'dart:io';
+// import 'package:http/http.dart' as http;
 
 void main() {
-  runApp(const DeviceForgeBrowser());
+  runApp(const ViewUABrowser());
 }
 
-class DeviceForgeBrowser extends StatelessWidget {
-  const DeviceForgeBrowser({Key? key}) : super(key: key);
+class ViewUABrowser extends StatelessWidget {
+  const ViewUABrowser({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'DeviceForge Browser',
+      title: 'View UA',
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
@@ -57,6 +61,20 @@ class DeviceForgeBrowser extends StatelessWidget {
   }
 }
 
+Future<void> testHttp() async {
+  try {
+    final res = await http.get(Uri.parse('https://api.ipify.org'));
+    debugPrint('TEST RESPONSE: ${res.body}');
+  } catch (e) {
+    debugPrint('TEST ERROR: $e');
+  }
+}
+
+Future<void> _openGithub() async {
+  final uri = Uri.parse('https://github.com/bhavneetv/ViewUA');
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
 // Model for saved user agents
 class SavedUserAgent {
   final String deviceName;
@@ -83,16 +101,17 @@ class SavedUserAgent {
 }
 
 class LandingPage extends StatefulWidget {
-  const LandingPage({Key? key}) : super(key: key);
+  const LandingPage({super.key});
 
   @override
   State<LandingPage> createState() => _LandingPageState();
 }
 
-class _LandingPageState extends State<LandingPage> with SingleTickerProviderStateMixin {
+class _LandingPageState extends State<LandingPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _urlController = TextEditingController();
   final TextEditingController _userAgentController = TextEditingController();
-  
+
   String _publicIp = 'Loading...';
   String _location = 'Loading...';
   String _isp = 'Loading...';
@@ -101,23 +120,35 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
   List<SavedUserAgent> _savedUserAgents = [];
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   final Map<String, String> _commonUserAgents = {
-    'Chrome Windows': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Chrome macOS': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    'Safari macOS': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
-    'Firefox Windows': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
-    'Edge Windows': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
-    'iPhone 15 Pro': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-    'iPad Pro': 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-    'Samsung Galaxy S24': 'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-    'Google Pixel 8': 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
-    'Googlebot': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+    'Chrome Windows':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Chrome macOS':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Safari macOS':
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+    'Firefox Windows':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0',
+    'Edge Windows':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 Edg/120.0.0.0',
+    'iPhone 15 Pro':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    'iPad Pro':
+        'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    'Samsung Galaxy S24':
+        'Mozilla/5.0 (Linux; Android 14; SM-S918B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    'Google Pixel 8':
+        'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+    'Googlebot':
+        'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
   };
 
   @override
   void initState() {
     super.initState();
+    testHttp();
+    _loadIpInfo();
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -134,36 +165,59 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
 
   Future<void> _loadIpInfo() async {
     try {
-      final response = await http.get(Uri.parse('https://ipapi.co/json/'));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _publicIp = data['ip'] ?? 'Unknown';
-          _location = '${data['city'] ?? 'Unknown'}, ${data['country_name'] ?? 'Unknown'}';
-          _isp = data['org'] ?? 'Unknown';
-          _vpnStatus = _detectVpn(data);
-        });
-      }
-    } catch (e) {
+
+      final ipRes = await http
+          .get(Uri.parse('https://api.ipify.org?format=json'))
+          .timeout(const Duration(seconds: 5));
+
+      final ipData = jsonDecode(ipRes.body);
+      final String ip = ipData['ip'];
+
+
+      final bool vpnOn = await _isVpnConnected();
+
+      if (!mounted) return;
+
       setState(() {
-        _publicIp = 'Error loading';
-        _location = 'Error loading';
-        _isp = 'Error loading';
+        _publicIp = ip;
+        _location = vpnOn ? 'Outside India (via VPN)' : 'India';
+        _isp = 'Not checked';
+        _vpnStatus = vpnOn ? '🟢 VPN Connected' : '⚪ VPN Not Connected';
+      });
+    } catch (e) {
+      debugPrint('FINAL IP ERROR: $e');
+
+      if (!mounted) return;
+
+      setState(() {
+        _publicIp = 'Unavailable';
+        _location = 'Unavailable';
+        _isp = 'Unavailable';
         _vpnStatus = 'Unknown';
       });
     }
   }
 
-  String _detectVpn(Map<String, dynamic> data) {
-    final org = (data['org'] ?? '').toLowerCase();
-    final vpnKeywords = ['vpn', 'proxy', 'hosting', 'cloud', 'datacenter', 'virtual'];
-    
-    for (var keyword in vpnKeywords) {
-      if (org.contains(keyword)) {
-        return '⚠️ Possibly Active';
+  Future<bool> _isVpnConnected() async {
+    try {
+      final interfaces = await NetworkInterface.list(
+        includeLoopback: false,
+        includeLinkLocal: true,
+      );
+
+      for (final i in interfaces) {
+        final name = i.name.toLowerCase();
+        if (name.contains('tun') ||
+            name.contains('utun') ||
+            name.contains('ppp') ||
+            name.contains('tap')) {
+          return true;
+        }
       }
+      return false;
+    } catch (_) {
+      return false;
     }
-    return '✓ Not Detected';
   }
 
   Future<void> _loadHistory() async {
@@ -189,14 +243,14 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
       userAgent: userAgent,
       savedAt: DateTime.now(),
     );
-    
+
     _savedUserAgents.removeWhere((e) => e.userAgent == userAgent);
     _savedUserAgents.insert(0, newAgent);
-    
+
     if (_savedUserAgents.length > 30) {
       _savedUserAgents = _savedUserAgents.sublist(0, 30);
     }
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList(
       'saved_user_agents_v2',
@@ -277,7 +331,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
     }
 
     final deviceNameController = TextEditingController();
-    
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -335,41 +389,65 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                 children: [
                   // App Header
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF00D9FF), Color(0xFF7C4DFF)],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.devices, size: 28),
-                      ),
-                      const SizedBox(width: 16),
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          Text(
-                            'DeviceForge',
-                            style: TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.2,
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFF00D9FF), Color(0xFF7C4DFF)],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
                             ),
+                            child: const Icon(Icons.devices, size: 28),
                           ),
-                          Text(
-                            'Browser Emulation & Testing',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF00D9FF),
-                              letterSpacing: 0.5,
-                            ),
+                          const SizedBox(width: 16),
+                          const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ViewUA',
+                                style: TextStyle(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                              Text(
+                                'Browser Emulation & Testing',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF00D9FF),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
+
+                      // 🔥 GitHub icon (right aligned, no indent issues)
+                      InkWell(
+                        borderRadius: BorderRadius.circular(50),
+                        onTap: _openGithub,
+                        child: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF0D1117),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const FaIcon(
+                            FontAwesomeIcons.github,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
+
                   const SizedBox(height: 32),
 
                   // IP Information Card
@@ -381,7 +459,10 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.info_outline, color: Color(0xFF00D9FF)),
+                              const Icon(
+                                Icons.info_outline,
+                                color: Color(0xFF00D9FF),
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Network Information',
@@ -395,11 +476,19 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                           const SizedBox(height: 20),
                           _buildInfoRow(Icons.public, 'Public IP', _publicIp),
                           const Divider(height: 24),
-                          _buildInfoRow(Icons.location_on, 'Location', _location),
+                          _buildInfoRow(
+                            Icons.location_on,
+                            'Location',
+                            _location,
+                          ),
                           const Divider(height: 24),
                           _buildInfoRow(Icons.dns, 'ISP', _isp),
                           const Divider(height: 24),
-                          _buildInfoRow(Icons.vpn_lock, 'VPN Status', _vpnStatus),
+                          _buildInfoRow(
+                            Icons.vpn_lock,
+                            'VPN Status',
+                            _vpnStatus,
+                          ),
                         ],
                       ),
                     ),
@@ -415,7 +504,10 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.phone_android, color: Color(0xFF7C4DFF)),
+                              const Icon(
+                                Icons.phone_android,
+                                color: Color(0xFF7C4DFF),
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 'User Agent Configuration',
@@ -432,7 +524,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                             maxLines: 3,
                             decoration: InputDecoration(
                               labelText: 'Custom User-Agent (Optional)',
-                              hintText: 'Leave empty for default browser behavior',
+                              hintText:
+                                  'Leave empty for default browser behavior',
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -454,10 +547,15 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: _showCommonUserAgents,
-                                  icon: const Icon(Icons.devices_other, size: 18),
+                                  icon: const Icon(
+                                    Icons.devices_other,
+                                    size: 18,
+                                  ),
                                   label: const Text('Presets'),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -466,9 +564,13 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                                 child: OutlinedButton.icon(
                                   onPressed: _showSavedUserAgents,
                                   icon: const Icon(Icons.bookmark, size: 18),
-                                  label: Text('Saved (${_savedUserAgents.length})'),
+                                  label: Text(
+                                    'Saved (${_savedUserAgents.length})',
+                                  ),
                                   style: OutlinedButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -489,7 +591,10 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.language, color: Color(0xFF00D9FF)),
+                              const Icon(
+                                Icons.language,
+                                color: Color(0xFF00D9FF),
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 'Website URL',
@@ -536,9 +641,13 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                             child: OutlinedButton.icon(
                               onPressed: _showHistory,
                               icon: const Icon(Icons.history),
-                              label: Text('Browsing History (${_history.length})'),
+                              label: Text(
+                                'Browsing History (${_history.length})',
+                              ),
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
                               ),
                             ),
                           ),
@@ -574,8 +683,12 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                           ),
                         ),
                         const SizedBox(height: 12),
-                        _buildFeature('🔐 Persistent login sessions (cookies, local/session storage)'),
-                        _buildFeature('📱 Device emulation with custom User-Agents'),
+                        _buildFeature(
+                          '🔐 Persistent login sessions (cookies, local/session storage)',
+                        ),
+                        _buildFeature(
+                          '📱 Device emulation with custom User-Agents',
+                        ),
                         _buildFeature('🌐 IP & VPN detection'),
                         _buildFeature('📚 Browsing history tracking'),
                         _buildFeature('💾 Save & manage User-Agent presets'),
@@ -602,10 +715,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
             children: [
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[400]),
               ),
               const SizedBox(height: 4),
               Text(
@@ -625,10 +735,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
   Widget _buildFeature(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 14),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 14)),
     );
   }
 
@@ -689,7 +796,10 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                           itemCount: _history.length,
                           itemBuilder: (context, index) {
                             return ListTile(
-                              leading: const Icon(Icons.public, color: Color(0xFF00D9FF)),
+                              leading: const Icon(
+                                Icons.public,
+                                color: Color(0xFF00D9FF),
+                              ),
                               title: Text(
                                 _history[index],
                                 maxLines: 1,
@@ -775,17 +885,24 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                             )
                           : ListView.builder(
                               controller: scrollController,
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                               itemCount: _savedUserAgents.length,
                               itemBuilder: (context, index) {
                                 final agent = _savedUserAgents[index];
                                 return Card(
                                   margin: const EdgeInsets.only(bottom: 8),
                                   child: ListTile(
-                                    leading: const Icon(Icons.smartphone, color: Color(0xFF7C4DFF)),
+                                    leading: const Icon(
+                                      Icons.smartphone,
+                                      color: Color(0xFF7C4DFF),
+                                    ),
                                     title: Text(
                                       agent.deviceName,
-                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                     subtitle: Text(
                                       agent.userAgent,
@@ -802,7 +919,8 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                                     ),
                                     onTap: () {
                                       Navigator.pop(context);
-                                      _userAgentController.text = agent.userAgent;
+                                      _userAgentController.text =
+                                          agent.userAgent;
                                       setState(() {});
                                     },
                                   ),
@@ -850,10 +968,7 @@ class _LandingPageState extends State<LandingPage> with SingleTickerProviderStat
                   padding: EdgeInsets.all(20),
                   child: Text(
                     'Common Device User Agents',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ),
                 Expanded(
@@ -925,11 +1040,7 @@ class BrowserPage extends StatefulWidget {
   final String initialUrl;
   final String userAgent;
 
-  const BrowserPage({
-    Key? key,
-    required this.initialUrl,
-    this.userAgent = '',
-  }) : super(key: key);
+  const BrowserPage({super.key, required this.initialUrl, this.userAgent = ''});
 
   @override
   State<BrowserPage> createState() => _BrowserPageState();
@@ -960,10 +1071,7 @@ class _BrowserPageState extends State<BrowserPage> {
             if (_currentUrl.isNotEmpty)
               Text(
                 _currentUrl,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[400],
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey[400]),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -982,7 +1090,8 @@ class _BrowserPageState extends State<BrowserPage> {
                   break;
                 case 'desktop':
                   await _webViewController?.evaluateJavascript(
-                    source: "document.querySelector('meta[name=\"viewport\"]')?.remove();",
+                    source:
+                        "document.querySelector('meta[name=\"viewport\"]')?.remove();",
                   );
                   _webViewController?.reload();
                   break;
@@ -1046,13 +1155,17 @@ class _BrowserPageState extends State<BrowserPage> {
             LinearProgressIndicator(
               value: _progress,
               backgroundColor: Colors.grey[800],
-              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00D9FF)),
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                Color(0xFF00D9FF),
+              ),
             ),
           Expanded(
             child: InAppWebView(
               initialUrlRequest: URLRequest(url: WebUri(widget.initialUrl)),
               initialSettings: InAppWebViewSettings(
-                userAgent: widget.userAgent.isNotEmpty ? widget.userAgent : null,
+                userAgent: widget.userAgent.isNotEmpty
+                    ? widget.userAgent
+                    : null,
                 javaScriptEnabled: true,
                 domStorageEnabled: true,
                 databaseEnabled: true,
@@ -1124,10 +1237,12 @@ class _BrowserPageState extends State<BrowserPage> {
   }
 
   Future<void> _clearStorage() async {
-    await _webViewController?.evaluateJavascript(source: """
+    await _webViewController?.evaluateJavascript(
+      source: """
       localStorage.clear();
       sessionStorage.clear();
-    """);
+    """,
+    );
     _webViewController?.reload();
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
