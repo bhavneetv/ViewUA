@@ -1,46 +1,54 @@
-name: Android Release Build
+name: Android APK Release
 
 on:
-  push:
-    tags:
-      - "v*"
-  workflow_dispatch:
+  workflow_dispatch:   # run manually from GitHub
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repo
-      - name: Checkout code
+      # 1️⃣ Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Setup Java (required for Android)
+      # 2️⃣ Setup Java
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
-      # 3️⃣ Setup Flutter (IMPORTANT FIX)
+      # 3️⃣ Setup Flutter
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      # 4️⃣ Flutter dependencies
+      # 4️⃣ Install dependencies
       - name: Install dependencies
         run: flutter pub get
 
-      # 5️⃣ Build release APK
-      - name: Build APK (Release)
+      # 5️⃣ Read version from pubspec.yaml
+      - name: Get app version
+        id: version
+        run: |
+          VERSION=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 6️⃣ Build release APK
+      - name: Build APK
         run: flutter build apk --release
 
-      # 6️⃣ Create GitHub Release & upload APK
-      - name: Upload APK to GitHub Release
+      # 7️⃣ Create GitHub Release and upload APK
+      - name: Create Release & Upload APK
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: ViewUA v${{ steps.version.outputs.version }}
+          body: |
+            Android APK build  
+            Version: ${{ steps.version.outputs.version }}
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
